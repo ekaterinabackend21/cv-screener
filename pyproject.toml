@@ -1,0 +1,24 @@
+[project]
+readme = "readme.md"
+name = "cv-screener"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.13.5",
+    "pydantic-ai-slim[anthropic,openai]>=2.44.0",
+    "pydantic-settings>=2.15.0",
+    "pypdf>=6.19.0",
+    "reportlab>=5.0.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[project.scripts]
+cv-screener = "cv_screener.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
