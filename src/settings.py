@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     image_model: str = "gpt-image-1-mini"
     image_generation_enabled: bool = False
     output_dir: str = "generated_cvs"
+    elasticsearch_url: str = "http://localhost:9200"
+    elasticsearch_index: str = "cv_candidates"
     api_key: SecretStr = SecretStr("")
     base_url: str = "https://api.relaymodels.com/v1"
 

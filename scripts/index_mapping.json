@@ -1,0 +1,47 @@
+{
+  "mappings": {
+    "properties": {
+      "first_name": {"type": "keyword"},
+      "last_name": {"type": "keyword"},
+      "full_name": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+      "position": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+      "seniority": {"type": "keyword"},
+      "location": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+      "email": {"type": "keyword"},
+      "summary": {"type": "text"},
+      "skills": {"type": "keyword"},
+      "languages": {
+        "type": "nested",
+        "properties": {
+          "name": {"type": "keyword"},
+          "level": {"type": "keyword"}
+        }
+      },
+      "experience": {
+        "type": "nested",
+        "properties": {
+          "company": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+          "position": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+          "start_date": {"type": "date"},
+          "end_date": {"type": "date"},
+          "achievements": {"type": "text"},
+          "technologies": {"type": "keyword"}
+        }
+      },
+      "education": {
+        "type": "nested",
+        "properties": {
+          "institution": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+          "qualification": {"type": "text"},
+          "field_of_study": {"type": "text"},
+          "start_year": {"type": "integer"},
+          "end_year": {"type": "integer"}
+        }
+      },
+      "full_text": {"type": "text"},
+      "embedding": {"type": "dense_vector", "dims": 384, "index": true, "similarity": "cosine"},
+      "source_file": {"type": "keyword"},
+      "file_hash": {"type": "keyword"}
+    }
+  }
+}
