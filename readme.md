@@ -226,18 +226,26 @@ header, profile, skills, experience, education, and languages.
 
 ### Images
 
-The RelayModels catalog currently has no image-generation model, so image generation
-is disabled by default. The PDF contains an empty `PHOTO` slot:
+Image generation is enabled by default. To avoid image API calls, disable it in
+`.env`; the PDF will then contain an empty `PHOTO` slot:
 
 ```dotenv
-IMAGE_GENERATION_ENABLED=false
+IMAGE_GENERATION_ENABLED=true
 ```
 
-Do not pass `--with-images` while this setting is false. If an image-capable
-OpenAI-compatible endpoint becomes available, set its exact model ID and enable it:
+When image generation is enabled, the regular command generates portraits:
+
+```bash
+uv run cv-screener generate --count 1
+```
+
+Use `--without-images` for a one-off run without portraits. If the setting is false,
+`--with-images` remains available only after re-enabling it in `.env`. For OpenRouter, set its
+OpenAI-compatible base URL and an image model ID from the image-model catalog:
 
 ```dotenv
-IMAGE_MODEL=<available-image-model-id>
+BASE_URL=https://openrouter.ai/api/v1
+IMAGE_MODEL=openai/gpt-image-1-mini
 IMAGE_GENERATION_ENABLED=true
 ```
 
@@ -247,7 +255,8 @@ Then run:
 uv run cv-screener generate --count 1 --with-images
 ```
 
-Generated image bytes are inserted into the PDF and are not saved as separate files.
+The image request uses OpenRouter's `/api/v1/images` endpoint. Generated image bytes
+are inserted into the PDF and are not saved as separate files.
 
 For inspecting a single structured profile without producing a PDF:
 

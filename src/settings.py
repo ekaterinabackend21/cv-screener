@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     llm_model: str = "gpt-5.6-luna"
     image_model: str = "gpt-image-1-mini"
-    image_generation_enabled: bool = False
+    image_generation_enabled: bool = True
     output_dir: str = "generated_cvs"
     elasticsearch_url: str = "http://localhost:9200"
     elasticsearch_index: str = "cv_candidates"

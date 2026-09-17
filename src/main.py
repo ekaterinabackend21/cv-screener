@@ -17,9 +17,14 @@ def main() -> None:
         "--count", type=int, choices=(1, 3, 5, 10), default=10,
         help="Number of distinct resumes to generate (default: 10).",
     )
-    generate_batch.add_argument(
+    image_options = generate_batch.add_mutually_exclusive_group()
+    image_options.add_argument(
         "--with-images", action="store_true",
-        help="Call the image API for portraits; requires IMAGE_GENERATION_ENABLED=true.",
+        help="Generate portraits (the default when IMAGE_GENERATION_ENABLED=true).",
+    )
+    image_options.add_argument(
+        "--without-images", action="store_true",
+        help="Skip portrait generation and leave an empty photo slot.",
     )
     generate = commands.add_parser(
         "generate-profile",
@@ -189,13 +194,14 @@ def main() -> None:
 
     from generation.pdf import render_resume
 
+    use_images = settings.image_generation_enabled and not args.without_images
     if args.with_images and not settings.image_generation_enabled:
         parser.error(
             "Image generation is disabled by IMAGE_GENERATION_ENABLED=false. "
             "Set it to true before using --with-images."
         )
     generate_portrait = None
-    if args.with_images:
+    if use_images:
         from generation.image import generate_portrait
 
     output_root = Path(settings.output_dir)
