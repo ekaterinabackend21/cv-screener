@@ -1,0 +1,35 @@
+{
+  "dataset": "evals/fixtures",
+  "cases": [
+    {
+      "id": "python-experience",
+      "question": "Who has experience with Python?",
+      "expected_any": ["Haruto Nishimura"]
+    },
+    {
+      "id": "spanish-speaking",
+      "question": "Which candidates speak Spanish?",
+      "expected_all": [
+        "Marcus Hale",
+        "Marta Vidal",
+        "Maya Chen",
+        "Maya Ellison"
+      ]
+    },
+    {
+      "id": "machine-learning-fit",
+      "question": "Who would be the best fit for a machine learning engineer role?",
+      "expected_any": ["Haruto Nishimura"]
+    },
+    {
+      "id": "profile-summary",
+      "question": "Summarize the profile of Haruto Nishimura.",
+      "expected_all": ["Haruto Nishimura"]
+    },
+    {
+      "id": "no-matching-candidate",
+      "question": "Which candidates have professional experience with Klingon language engineering?",
+      "expected_none": true
+    }
+  ]
+}

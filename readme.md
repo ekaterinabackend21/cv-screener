@@ -199,6 +199,69 @@ uv run cv-screener chat \
   --question "Which candidates speak Spanish?"
 ```
 
+## Run the fixed chat evaluations
+
+The repository contains a reproducible evaluation dataset in `evals/fixtures/` and
+five cases in `evals/manifest.json`. The fixture PDFs are kept separate from the
+normal generated dataset so that new resume generations cannot change the expected
+results.
+
+The manifest stores the questions and expected candidate names. If the fixture PDFs
+are replaced, update the names in `evals/manifest.json` to match the new dataset.
+Use accent-insensitive full names; the evaluation script normalizes case and accents
+before checking answers.
+
+Each case uses one of three expectation types:
+
+- `expected_any`: at least one listed candidate must be named;
+- `expected_all`: every listed candidate must be named;
+- `expected_none`: the answer must explicitly report that no candidate matches.
+
+To freeze a new generated batch, copy its ten PDFs into `evals/fixtures/`, then edit
+the five questions and expected names in `evals/manifest.json`.
+
+Start Elasticsearch if it is not already running:
+
+```bash
+docker compose up -d
+```
+
+Create a separate evaluation index. The environment-variable prefix overrides the
+value from `.env` for this command only:
+
+```bash
+ELASTICSEARCH_INDEX=cv_candidates_eval \
+  docker compose run --rm create-index
+```
+
+Ingest the fixed PDFs into that index:
+
+```bash
+ELASTICSEARCH_INDEX=cv_candidates_eval \
+  uv run cv-screener ingest --input evals/fixtures
+```
+
+Run the five chat evaluations against the same index:
+
+```bash
+ELASTICSEARCH_INDEX=cv_candidates_eval \
+  uv run python evals/run_evals.py
+```
+
+The script sends five real questions to the configured text model and prints each
+`PASS` or `FAIL`, the returned answer, and the final total. A successful run ends
+with:
+
+```text
+Passed: 5/5
+Overall: PASS
+```
+
+The eval run requires `API_KEY`, `BASE_URL` and `LLM_MODEL` in `.env`, and uses five
+paid model requests. It does not modify the default `cv_candidates` index. To use a
+different fixed dataset, replace the PDFs in `evals/fixtures/`, update the manifest,
+and ingest into a new evaluation index name.
+
 ## Generate resumes
 
 Generate one, three, five, or ten resumes. If `--count` is omitted, ten are created:
@@ -299,7 +362,9 @@ Available:
 - PDF ingest with structured extraction and local embeddings;
 - field and semantic search commands;
 - tool-using CLI chat agent.
+- fixed evaluation fixtures, manifest, and five-case eval runner.
 
 Available next:
 
-1. tests, evaluations, and the complete final documentation.
+1. API-free unit tests;
+2. final NOTES.md and clean-environment verification.
