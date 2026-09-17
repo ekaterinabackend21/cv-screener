@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     output_dir: str = "generated_cvs"
     elasticsearch_url: str = "http://localhost:9200"
     elasticsearch_index: str = "cv_candidates"
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     api_key: SecretStr = SecretStr("")
     base_url: str = "https://api.relaymodels.com/v1"
 
