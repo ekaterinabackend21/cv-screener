@@ -57,6 +57,14 @@ def main() -> None:
         "--min-score", type=float,
         help="Minimum Elasticsearch score for semantic results.",
     )
+    chat = commands.add_parser(
+        "chat",
+        help="Chat about indexed candidates using Elasticsearch search tools.",
+    )
+    chat.add_argument(
+        "--question",
+        help="Ask one question and exit; omit it for an interactive session.",
+    )
     args = parser.parse_args()
     if args.command is None:
         parser.print_help()
@@ -67,7 +75,7 @@ def main() -> None:
 
     try:
         settings = Settings()
-        if args.command in {"generate", "generate-profile", "ingest"}:
+        if args.command in {"generate", "generate-profile", "ingest", "chat"}:
             settings.model_credentials()
     except ValueError:
         parser.error(
@@ -138,6 +146,47 @@ def main() -> None:
         print(json.dumps(results, ensure_ascii=False, indent=2))
         return
 
+    if args.command == "chat":
+        from chat.agent import answer_question
+        from search.client import check_elasticsearch_connection, create_elasticsearch_client
+
+        try:
+            client = create_elasticsearch_client(settings)
+            check_elasticsearch_connection(client)
+            if not client.indices.exists(index=settings.elasticsearch_index):
+                raise RuntimeError(
+                    f"Index '{settings.elasticsearch_index}' does not exist. "
+                    "Run `docker compose up -d` first."
+                )
+        except RuntimeError as exc:
+            parser.error(str(exc))
+
+        if args.question:
+            try:
+                print(answer_question(args.question, settings=settings, client=client))
+            except ValueError as exc:
+                parser.error(str(exc))
+            return
+
+        print("CV Screener chat. Type /exit or press Ctrl-D to quit.")
+        while True:
+            try:
+                question = input("You: ").strip()
+            except EOFError:
+                print()
+                break
+            if question.casefold() in {"/exit", "/quit"}:
+                break
+            if not question:
+                continue
+            try:
+                answer = answer_question(question, settings=settings, client=client)
+            except ValueError as exc:
+                print(f"Error: {exc}")
+                continue
+            print(f"Agent: {answer}")
+        return
+
     from generation.pdf import render_resume
 
     if args.with_images and not settings.image_generation_enabled:
@@ -160,15 +209,35 @@ def main() -> None:
     print(f"Planning {args.count} varied candidate briefs...")
     briefs = generate_candidate_briefs(args.count, settings=settings)
     for index, brief in enumerate(briefs, start=1):
-        print(f"[{index}/{args.count}] Generating profile...")
-        profile = generate_profile(brief, settings=settings)
-        portrait = None
-        if generate_portrait is not None:
-            print(f"[{index}/{args.count}] Generating synthetic portrait...")
-            portrait = generate_portrait(profile, settings=settings)
-        else:
-            print(f"[{index}/{args.count}] Image generation disabled; using empty photo slot.")
-        pdf = render_resume(profile, portrait)
+        profile_prompt = brief
+        for attempt in range(1, 4):
+            print(f"[{index}/{args.count}] Generating profile...")
+            profile = generate_profile(profile_prompt, settings=settings)
+            portrait = None
+            if generate_portrait is not None:
+                print(f"[{index}/{args.count}] Generating synthetic portrait...")
+                portrait = generate_portrait(profile, settings=settings)
+            else:
+                print(f"[{index}/{args.count}] Image generation disabled; using empty photo slot.")
+            try:
+                pdf = render_resume(profile, portrait)
+            except ValueError as exc:
+                if "too long for one readable page" not in str(exc) or attempt == 3:
+                    raise
+                print(
+                    f"[{index}/{args.count}] Profile overflowed the page; "
+                    "regenerating a more compact version..."
+                )
+                profile_prompt = (
+                    f"{brief}\n\n"
+                    "The previous draft did not fit on one readable A4 page. "
+                    "Create a more compact version: use a summary under 300 characters, "
+                    "exactly two recent experience entries with two achievements each, "
+                    "and concise skills, education and language sections. Preserve the "
+                    "candidate's role, seniority and core technologies."
+                )
+                continue
+            break
         filename = re.sub(
             r"[^a-z0-9]+", "_",
             f"{profile.first_name}_{profile.last_name}_{profile.position}".lower(),

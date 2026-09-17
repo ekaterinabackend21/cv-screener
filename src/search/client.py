@@ -87,6 +87,25 @@ def search_by_embedding(
     return _hits_to_results(response)
 
 
+def get_candidate_by_name(
+    client: Elasticsearch,
+    index_name: str,
+    *,
+    name: str,
+) -> dict | None:
+    """Retrieve one indexed candidate whose full name matches the supplied name."""
+    if not name.strip():
+        raise ValueError("Candidate name must not be empty.")
+    response = client.search(
+        index=index_name,
+        query={"match_phrase": {"full_name": name.strip()}},
+        size=1,
+        source={"excludes": ["embedding", "full_text"]},
+    )
+    results = _hits_to_results(response)
+    return results[0] if results else None
+
+
 def _hits_to_results(response: dict) -> list[dict]:
     """Convert an Elasticsearch response into compact JSON-serializable results."""
     results = []

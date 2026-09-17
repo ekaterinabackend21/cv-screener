@@ -4,7 +4,7 @@ CV Screener is a Python CLI application for generating synthetic resumes, indexi
 them in Elasticsearch, and answering questions about the indexed candidates.
 
 The project is currently being built in stages. Resume generation, PDF ingest,
-embeddings, and field/semantic search are available; the chat agent is next.
+embeddings, field/semantic search, and the CLI chat agent are available.
 
 ## Requirements
 
@@ -164,6 +164,41 @@ uv run cv-screener search \
 If no candidates reach the threshold, the command prints an empty JSON list.
 Results include the candidate fields and the Elasticsearch similarity score.
 
+## Chat with the indexed candidates
+
+Start an interactive CLI chat after indexing the resumes:
+
+```bash
+uv run cv-screener chat
+```
+
+Ask questions such as:
+
+```text
+Who has experience with Python?
+Which candidates speak Spanish?
+Who would be the best fit for a senior ML role?
+Summarize the profile of Mara Vogel.
+```
+
+The agent has three Elasticsearch tools:
+
+- structured field search;
+- semantic search with the local embedding model;
+- lookup of one candidate by full name.
+
+It receives only the results returned by those tools. The system instructions require
+the agent to call a tool before making claims about candidates, name candidates in
+answers, and report when no matching candidate is found. Use `/exit`, `/quit`, or
+`Ctrl-D` to leave the interactive session.
+
+For a single non-interactive question:
+
+```bash
+uv run cv-screener chat \
+  --question "Which candidates speak Spanish?"
+```
+
 ## Generate resumes
 
 Generate one, three, five, or ten resumes. If `--count` is omitted, ten are created:
@@ -253,9 +288,9 @@ Available:
 - local Elasticsearch Compose setup and index mapping;
 - Elasticsearch Python client and connection helper;
 - PDF ingest with structured extraction and local embeddings;
-- field and semantic search commands.
+- field and semantic search commands;
+- tool-using CLI chat agent.
 
 Available next:
 
-1. chat agent with Elasticsearch tools;
-2. tests, evaluations, and the complete final documentation.
+1. tests, evaluations, and the complete final documentation.
