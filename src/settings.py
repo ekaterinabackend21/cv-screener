@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     )
 
     llm_model: str = "gpt-5.6-luna"
+    image_model: str = "gpt-image-1-mini"
+    image_generation_enabled: bool = False
+    output_dir: str = "generated_cvs"
     api_key: SecretStr = SecretStr("")
     base_url: str = "https://api.relaymodels.com/v1"
 

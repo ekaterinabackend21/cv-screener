@@ -68,3 +68,20 @@ class CandidateProfile(ProfileModel):
     languages: list[Language] = Field(min_length=1, max_length=4)
     experience: list[Experience] = Field(min_length=1, max_length=3)
     education: list[Education] = Field(min_length=1, max_length=2)
+
+
+class CandidateBrief(ProfileModel):
+    """Compact planning data used to make one candidate distinct from another."""
+
+    role: ShortText
+    seniority: Literal["intern", "junior", "middle", "senior", "lead"]
+    location: ShortText
+    focus_areas: list[ShortText] = Field(min_length=2, max_length=5)
+    languages: list[ShortText] = Field(min_length=1, max_length=3)
+    career_angle: str = Field(min_length=1, max_length=220)
+
+
+class CandidateBriefPlan(ProfileModel):
+    """Validated collection of runtime-generated candidate briefs."""
+
+    candidates: list[CandidateBrief] = Field(min_length=1, max_length=10)
