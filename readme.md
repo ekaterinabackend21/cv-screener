@@ -3,8 +3,8 @@
 CV Screener is a Python CLI application for generating synthetic resumes, indexing
 them in Elasticsearch, and answering questions about the indexed candidates.
 
-The project is currently being built in stages. Resume generation is available now;
-PDF ingest, embeddings, field search, semantic search, and the chat agent are next.
+The project is currently being built in stages. Resume generation, PDF ingest,
+embeddings, and field/semantic search are available; the chat agent is next.
 
 ## Requirements
 
@@ -123,6 +123,47 @@ Ingest requires both a running Elasticsearch container and the configured text-m
 API key because structured fields are extracted from the PDF by the LLM. The local
 embedding model itself does not require an API key.
 
+## Search indexed resumes
+
+Search does not require an LLM API call for field mode. Elasticsearch must be
+running and the index must contain ingested resumes.
+
+Search a structured field:
+
+```bash
+uv run cv-screener search \
+  --mode field \
+  --field skills \
+  --value Python
+```
+
+Supported examples include `first_name`, `last_name`, `position`, `seniority`,
+`location`, `skills`, `languages.name`, `languages.level`,
+`experience.company`, `experience.technologies`, and `education.institution`.
+Nested fields such as `languages.name` are searched within the same nested object.
+
+Search by meaning with the local embedding model:
+
+```bash
+uv run cv-screener search \
+  --mode semantic \
+  --query "senior machine learning engineer with Python experience"
+```
+
+Limit the number of returned candidates with `--limit 5`. For semantic search,
+`--min-score` can remove weak matches:
+
+```bash
+uv run cv-screener search \
+  --mode semantic \
+  --query "senior machine learning engineer" \
+  --limit 5 \
+  --min-score 0.70
+```
+
+If no candidates reach the threshold, the command prints an empty JSON list.
+Results include the candidate fields and the Elasticsearch similarity score.
+
 ## Generate resumes
 
 Generate one, three, five, or ten resumes. If `--count` is omitted, ten are created:
@@ -199,8 +240,7 @@ The model name is configurable through:
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 ```
 
-The model is downloaded and ready locally; the ingest command will use it once that
-pipeline is implemented.
+The model is downloaded and ready locally; both ingest and semantic search use it.
 
 ## Current implementation status
 
@@ -211,10 +251,11 @@ Available:
 - runtime generation of varied candidate briefs;
 - one-page PDF resume generation;
 - local Elasticsearch Compose setup and index mapping;
-- Elasticsearch Python client and connection helper.
+- Elasticsearch Python client and connection helper;
+- PDF ingest with structured extraction and local embeddings;
+- field and semantic search commands.
 
 Available next:
 
-1. field and semantic search commands;
-2. chat agent with Elasticsearch tools;
-3. tests, evaluations, and the complete final documentation.
+1. chat agent with Elasticsearch tools;
+2. tests, evaluations, and the complete final documentation.

@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 import re
 from datetime import datetime
@@ -34,6 +35,28 @@ def main() -> None:
         help="Parse PDF resumes and index their fields and embeddings.",
     )
     ingest.add_argument("--input", type=Path, required=True, help="PDF file or directory of PDFs.")
+    search = commands.add_parser(
+        "search",
+        help="Search indexed resumes by a field or by semantic similarity.",
+    )
+    search.add_argument(
+        "--mode", choices=("field", "semantic"), required=True,
+        help="Search mode: structured field matching or semantic similarity.",
+    )
+    search.add_argument(
+        "--field",
+        help="Structured field, for example skills, seniority or languages.name.",
+    )
+    search.add_argument("--value", help="Value for a structured field search.")
+    search.add_argument("--query", help="Natural-language query for semantic search.")
+    search.add_argument(
+        "--limit", type=int, default=10,
+        help="Maximum number of results (default: 10).",
+    )
+    search.add_argument(
+        "--min-score", type=float,
+        help="Minimum Elasticsearch score for semantic results.",
+    )
     args = parser.parse_args()
     if args.command is None:
         parser.print_help()
@@ -44,7 +67,8 @@ def main() -> None:
 
     try:
         settings = Settings()
-        settings.model_credentials()
+        if args.command in {"generate", "generate-profile", "ingest"}:
+            settings.model_credentials()
     except ValueError:
         parser.error(
             "Check .env: set API_KEY, BASE_URL and LLM_MODEL "
@@ -65,6 +89,53 @@ def main() -> None:
         except (FileNotFoundError, RuntimeError, ValueError) as exc:
             parser.error(str(exc))
         print(f"Indexed {count} PDF file(s) into {settings.elasticsearch_index}.")
+        return
+
+    if args.command == "search":
+        if args.limit < 1:
+            parser.error("--limit must be positive.")
+        if args.min_score is not None and args.min_score < 0:
+            parser.error("--min-score must not be negative.")
+        if args.mode == "field" and (not args.field or not args.value):
+            parser.error("Field search requires both --field and --value.")
+        if args.mode == "semantic" and not args.query:
+            parser.error("Semantic search requires --query.")
+        from search.client import (
+            check_elasticsearch_connection,
+            create_elasticsearch_client,
+            search_by_embedding,
+            search_by_field,
+        )
+
+        try:
+            client = create_elasticsearch_client(settings)
+            check_elasticsearch_connection(client)
+            if not client.indices.exists(index=settings.elasticsearch_index):
+                raise RuntimeError(
+                    f"Index '{settings.elasticsearch_index}' does not exist. "
+                    "Run `docker compose up -d` first."
+                )
+            if args.mode == "field":
+                results = search_by_field(
+                    client,
+                    settings.elasticsearch_index,
+                    field=args.field,
+                    value=args.value,
+                    limit=args.limit,
+                )
+            else:
+                from indexing.embeddings import embed_text
+
+                results = search_by_embedding(
+                    client,
+                    settings.elasticsearch_index,
+                    embed_text(args.query, settings=settings),
+                    limit=args.limit,
+                    min_score=args.min_score,
+                )
+        except (RuntimeError, ValueError) as exc:
+            parser.error(str(exc))
+        print(json.dumps(results, ensure_ascii=False, indent=2))
         return
 
     from generation.pdf import render_resume
