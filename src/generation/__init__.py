@@ -1,0 +1,1 @@
+"""Synthetic resume profile generation."""
