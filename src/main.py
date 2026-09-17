@@ -29,6 +29,11 @@ def main() -> None:
         required=True,
         help="Describe the fictional candidate's role, seniority and background.",
     )
+    ingest = commands.add_parser(
+        "ingest",
+        help="Parse PDF resumes and index their fields and embeddings.",
+    )
+    ingest.add_argument("--input", type=Path, required=True, help="PDF file or directory of PDFs.")
     args = parser.parse_args()
     if args.command is None:
         parser.print_help()
@@ -50,6 +55,16 @@ def main() -> None:
             parser.error("--brief must not be empty.")
         profile = generate_profile(args.brief, settings=settings)
         print(profile.model_dump_json(indent=2))
+        return
+
+    if args.command == "ingest":
+        from indexing.pipeline import ingest_path
+
+        try:
+            count = ingest_path(args.input, settings=settings)
+        except (FileNotFoundError, RuntimeError, ValueError) as exc:
+            parser.error(str(exc))
+        print(f"Indexed {count} PDF file(s) into {settings.elasticsearch_index}.")
         return
 
     from generation.pdf import render_resume

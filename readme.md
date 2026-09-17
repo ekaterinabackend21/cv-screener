@@ -98,6 +98,31 @@ docker compose down
 Do not use `docker compose down -v` unless you intentionally want to delete the
 local Elasticsearch data.
 
+## Ingest PDF resumes
+
+After generating a batch and starting Elasticsearch, index its PDF files:
+
+```bash
+uv run cv-screener ingest \
+  --input generated_cvs/cv-DD-MM-YYYY_HH-MM
+```
+
+The ingest pipeline performs these steps for every PDF:
+
+```text
+PDF → pypdf text extraction → LLM structured-field extraction
+    → local 384-dimensional embedding → Elasticsearch document
+```
+
+The source PDF is the only input data source. The image is ignored during text
+extraction. Elasticsearch stores the structured fields, complete extracted text,
+embedding, source path, and SHA-256 file hash. Re-ingesting the same file updates the
+same document instead of creating a duplicate.
+
+Ingest requires both a running Elasticsearch container and the configured text-model
+API key because structured fields are extracted from the PDF by the LLM. The local
+embedding model itself does not require an API key.
+
 ## Generate resumes
 
 Generate one, three, five, or ten resumes. If `--count` is omitted, ten are created:
@@ -188,10 +213,8 @@ Available:
 - local Elasticsearch Compose setup and index mapping;
 - Elasticsearch Python client and connection helper.
 
-Next:
+Available next:
 
-1. PDF text extraction and LLM field extraction;
-2. local embeddings and idempotent ingest;
-3. field and semantic search commands;
-4. chat agent with Elasticsearch tools;
-5. tests, evaluations, and the complete final documentation.
+1. field and semantic search commands;
+2. chat agent with Elasticsearch tools;
+3. tests, evaluations, and the complete final documentation.
